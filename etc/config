@@ -1,0 +1,15 @@
+thread = 8
+--logger = "log/main.log"
+logpath = "log"
+harbor = 0
+start = "main"
+bootstrap = "snlua bootstrap"	-- The service for bootstrap
+luaservice = "skynet/service/?.lua;service/?.lua"
+lualoader = "skynet/lualib/loader.lua"
+cpath = "skynet/cservice/?.so"
+-- daemon = "etc/skynet.pid"
+lua_path = "lualib/?.lua;skynet/lualib/?.lua"
+lua_cpath = "skynet/luaclib/?.so"
+
+listen = "$AVALON_LISTEN"
+broker = $AVALON_BROKER
