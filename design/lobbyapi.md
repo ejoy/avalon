@@ -11,30 +11,19 @@ Cookie
 每个用户都带有一个 unique userid 。cookie 名为 userid 。
 如果用户没有 userid 的 cookie ，服务器主动生成一个设为 cookie 。
 
-每个用户都可选一个 username 的 cookie ，不要求唯一。
-如果用户没有 username 的 cookie ，服务器会先从历史中查找到这个 userid 用过的最后一个用户名，
-如果没有，就生成一个 用户XXX 的名字。
-
-名字会显示在大厅界面上左上角，并可以改变。
-
 API
 ====
-通过向 /lobby 发送 json 请求，可以发起几个可选动作。
+通过向 /lobby 发送请求。请求必须使用 x-www-form-urlencoded 格式，Content-Type 可以不填（会被忽略）。
 
-* action 字段表示要做什么动作，它可以是：
-** name : 名字。可以用来修改自己的用户名。
-** create : 创建一个新房间。
-** join : 进入一个房间。( room: id )
+必须有一个 action 字段，表示发起的动作，它可以是：
 
-服务器可能返回：
+* getname : 获取名字。可以用来获取自己的用户名。
+* setname : 设置名字。可以用来修改自己的用户名。需要额外字段 username 。
+* create : 创建一个新房间。
+* join : 进入一个房间。需要额外字段 roomid 。
 
-* status : "ok" / "error" / "join"
+服务器返回 json 格式。status 字段表示状态，可以是
 
-ok 表示操作成功
-error 表示操作失败。进一步的描述由 error 字段给出。
-join 表示应该引导用户去一个房间。room 字段是房间号。
-
-
-
-
-
+* ok : 表示操作成功。另外有字段 username 表示当前用户名。
+* error : 表示操作失败，还会有一个额外的 error 字段描述具体信息。
+* join : 表示应该进入一个房间, 还会有一个额外的字段 room 表示房间号(一个整数)。
