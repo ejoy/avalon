@@ -28,10 +28,10 @@ Cookie
 ====
 通过向 /room 发送 json 请求，可以做准备状态的交互。每个请求都必须有几个必备项。
 
-roomid: 123456
-status: "prepare"
-action: "操作名"
-version: 当前已知的状态版本号
+* roomid: 123456
+* status: "prepare"
+* action: "操作名"
+* version: 当前已知的状态版本号
 
 如果 roomid 无效，会返回错误信息。应该引导用户回到大厅界面。
 如果 roomid 有效，但 status 无效或 action 无效，返回错误信息。应该引导用户刷新房间页面。
@@ -47,8 +47,8 @@ action 可以是这些：
 
 服务器对请求的返回就是当前房间的状态。
 
-status : "error" / "ok" / "prepare" / "game"
-version : 当前状态的版本号
+* status : "error" / "ok" / "prepare" / "game"
+* version : 当前状态的版本号
 
 * error : 出错了， errno : 出错号. error : 出错信息。
 * ok : 用于请求返回。表示没有状态变化。
