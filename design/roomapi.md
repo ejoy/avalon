@@ -11,10 +11,6 @@ Cookie
 每个用户都带有一个 unique userid 。cookie 名为 userid 。
 如果用户没有 userid 的 cookie ，服务器主动生成一个设为 cookie 。
 
-每个用户都可选一个 username 的 cookie ，不要求唯一。
-如果用户没有 username 的 cookie ，服务器会先从历史中查找到这个 userid 用过的最后一个用户名，
-如果没有，就生成一个 用户XXX 的名字。
-
 状态
 ====
 房间有多个状态，不同的状态对应不同的页面。但都是通过 /123456 这样形式的 URL 访问到的。
