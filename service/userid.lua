@@ -1,4 +1,7 @@
 local skynet = require "skynet"
+local math = math
+local utf8 = utf8
+local table = table
 
 local users = {}
 local lastid = 0
@@ -27,9 +30,26 @@ local function get_username(userid)
 	return username
 end
 
--- todo: check username
 local function set_username(userid, username)
-	users[userid] = username
+	-- verify username
+	if #username > 16 or username:find "[^%w%.\128-\255]" then
+		local temp = {}
+		for p,c in utf8.codes(username) do
+			if #temp > 8 then
+				break
+			end
+			if c > 128 or string.char(c):find "[%w%.]" then
+				table.insert(temp, c)
+			end
+		end
+		if #temp > 1 then
+			users[userid] = utf8.char(table.unpack(temp))
+		else
+			new_username(userid)
+		end
+	else
+		users[userid] = username
+	end
 end
 
 skynet.start(function()
@@ -37,7 +57,7 @@ skynet.start(function()
 		if not userid then
 			userid, username = create_userid()
 		else
-			if not username then
+			if not username or username == "" then
 				username = get_username(userid)
 			else
 				set_username(userid, username)
