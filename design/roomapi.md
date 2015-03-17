@@ -149,6 +149,12 @@ needs : "为什么还不能开始游戏"
 * plan : 提出一个提案, "list" : [id1, id2, ...]
 * vote : 对当前提案投票. "ticket" : true/false
 * quest : 进行一个任务, "ticket" : true/false
-* list : 请求用户列表
+* list : 请求用户列表, 以及个人的身份, 还有其它额外的信息.
 
 如果是发送 list, 那么将返回一个当前用户列表.
+
+{
+  "player" : [ { "userid" : id , "username" : "name", "color" : "#ffffff" }, ... ],
+  "identity" : { "name" : 名称 , "desc" : "描述串"  },
+  "information" : [ { "userid" : "身份" } , ...  ]	// 可以看见的 userid 的身份.
+}
