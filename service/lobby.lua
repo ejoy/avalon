@@ -1,24 +1,12 @@
 local skynet = require "skynet"
 local urllib = require "http.url"
+local staticfile = require "staticfile"
 local string = string
 
 local userservice
 local roomkeeper
 
-local content = [[
-<html>
-<header>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>Game</title>
-</header>
-<body>
-<ul>
-<li>创建新房间</li>
-<li>进入房间</li>
-</ul>
-</body>
-</html>
-]]
+local content = staticfile["index.html"]
 
 local function main()
 	return content

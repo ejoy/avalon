@@ -13,3 +13,4 @@ lua_cpath = "skynet/luaclib/?.so"
 
 listen = "$AVALON_LISTEN"
 broker = $AVALON_BROKER
+static_path = "$AVALON_STATIC"

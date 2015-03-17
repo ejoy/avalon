@@ -4,6 +4,7 @@ local httpd = require "http.httpd"
 local sockethelper = require "http.sockethelper"
 local urllib = require "http.url"
 local log = require "log"
+local staticfile = require "staticfile"
 
 local roomkeeper
 local userservice
@@ -88,19 +89,35 @@ local function handle_socket(id)
 			response(id, code)
 		else
 			local action = urllib.parse(url)
-			local f = action_method[action]
-			if not f then
-				local room = tonumber(action:sub(2))
-				if room then
-					local userid, username = get_userid(header)
-					local c, body = dispatch_room(room, userid, username)
-					response(id, c, body, userid_cookie[userid])
+			local offset = action:find("/",2,true)
+			if offset then
+				local path = action:sub(1,offset-1)
+				local filename = action:sub(offset+1)
+				if path == "/static" then
+					local content = staticfile[filename]
+					if content then
+						response(id, 200, content)
+					else
+						response(id, 404, "404 Not found")
+					end
 				else
 					response(id, 404, "404 Not found")
 				end
 			else
-				local userid, username = get_userid(header)
-				response(id, 200, f(body, userid, username), userid_cookie[userid])
+				local f = action_method[action]
+				if not f then
+					local room = tonumber(action:sub(2))
+					if room then
+						local userid, username = get_userid(header)
+						local c, body = dispatch_room(room, userid, username)
+						response(id, c, body, userid_cookie[userid])
+					else
+						response(id, 404, "404 Not found")
+					end
+				else
+					local userid, username = get_userid(header)
+					response(id, 200, f(body, userid, username), userid_cookie[userid])
+				end
 			end
 		end
 	else
