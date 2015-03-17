@@ -34,12 +34,12 @@ Cookie
 * version: 当前已知的状态版本号
 
 如果 roomid 无效，会返回错误信息。应该引导用户回到大厅界面。
-如果 roomid 有效，但 status 无效或 action 无效，返回错误信息。应该引导用户刷新房间页面。
+如果 roomid 有效，但 status 无效或 action 无效，返回状态信息。
 每次请求提交，都应该给出一个当前已知的状态版本号。0 表示获取全新版本。
 
 action 可以是这些：
 
-* name : 更换名字。name : 名字。
+* setname : 更换名字。username : 名字。
 * ready : 准备确认。enable : true/false 。
 * kick : 将某个用户设为旁观。id : 用户id 。
 * set : 修改规则。rule : 规则编号。enable : ture/false 。注：修改规则会导致 ready 状态变化。
@@ -50,7 +50,7 @@ action 可以是这些：
 * status : "error" / "ok" / "prepare" / "game"
 * version : 当前状态的版本号
 
-* error : 出错了， errno : 出错号. error : 出错信息。
+* error : 出错了. error : 出错信息。
 * ok : 用于请求返回。表示没有状态变化。
 * prepare : 目前处于准备状态, 并刷新成新版本。
 * game : 目前处于游戏状态, 并刷新成新版本。
@@ -64,10 +64,9 @@ player : {
 }
 
 然后是规则列表
-rule : {
-  { rule: 编号, enable : true/false }
-  { ... }
-}
+rule : [ 2,3,4,5 ]
+每个数字表示一条 enable 的规则.
+
 
 
 

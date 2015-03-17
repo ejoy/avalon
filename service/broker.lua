@@ -54,12 +54,30 @@ action_method["/lobby"] = function(body, userid, username)
 	return skynet.call(lobby, "lua", "api", userid, username, body)
 end
 
+action_method["/room"] = function(body, userid, username)
+	local args = urllib.parse_query(body)
+	if not args then
+		return '{"status":"error","error":"Invalid Action"}'
+	end
+	local roomid = tonumber(args.roomid)
+	if not roomid then
+		return '{"status":"error","error":"Invalid Room id"}'
+	end
+	local r = skynet.call(roomkeeper, "lua", "query", roomid)
+	if not r then
+		return '{"status":"error","error":"Room not open"}'
+	end
+	args.userid = userid
+	return skynet.call(r, "lua", "api", args)
+end
+
 local function dispatch_room(room, userid, username)
 	local r = skynet.call(roomkeeper, "lua", "query", room)
 	if not r then
 		return 404, "Invalid or closed room."
 	end
-	return 200, skynet.call(r, "lua", "web", userid, username), userid_cookie[userid]
+	local body = skynet.call(r, "lua", "web", userid, username)
+	return 200, body
 end
 
 local function handle_socket(id)
@@ -75,7 +93,8 @@ local function handle_socket(id)
 				local room = tonumber(action:sub(2))
 				if room then
 					local userid, username = get_userid(header)
-					response(id, dispatch_room(room, userid, username), userid_cookie[userid])
+					local c, body = dispatch_room(room, userid, username)
+					response(id, c, body, userid_cookie[userid])
 				else
 					response(id, 404, "404 Not found")
 				end

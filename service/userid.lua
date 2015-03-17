@@ -27,6 +27,7 @@ local function get_username(userid)
 	return username
 end
 
+-- todo: check username
 local function set_username(userid, username)
 	users[userid] = username
 end
@@ -40,6 +41,7 @@ skynet.start(function()
 				username = get_username(userid)
 			else
 				set_username(userid, username)
+				username = users[userid]
 			end
 		end
 		skynet.ret(skynet.pack(userid, username))
