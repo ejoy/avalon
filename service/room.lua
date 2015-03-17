@@ -1,6 +1,9 @@
 local skynet = require "skynet"
 local log = require "log"
 local table = table
+local staticfile = require "staticfile"
+
+local content = staticfile["room.html"]
 
 local ALIVETIME = 100 * 60 * 10 -- 10 minutes
 
@@ -55,7 +58,7 @@ end
 
 function room.web(userid, username)
 	enter_room(userid, username)
-	return string.format("你好 %d %s", userid, username)
+	return content
 end
 
 local function update_status()

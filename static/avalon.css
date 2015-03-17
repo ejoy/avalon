@@ -1,0 +1,128 @@
+html {
+  background-color: black;
+  color: #15b940;
+  font-family: monospace;
+  font-size: 15px;
+}
+
+ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.wrapper{
+  border: 1px dashed #39da08;
+  margin: 20px auto;
+  padding: 10px;
+}
+
+.inner {
+  width: 85%;
+  margin: 0 auto;
+}
+
+.room_title{
+  text-align: center;
+}
+
+.people{
+  overflow: hidden;
+  margin: 20px 0;
+}
+
+.people div{
+  float: left;
+  width: 50%;
+}
+
+.people .status_mark{
+  margin-right: 5px;
+}
+
+.people_status span{
+  margin-right: 5px;
+}
+
+.room_rule span{
+  margin-left: 10px;
+}
+
+.action {
+  margin-bottom: 10px;
+}
+.action input{
+  background-color: black; 
+  border: 1px dashed #39da08;
+  color: #39da08;
+  line-height: 15px;
+  padding: 5px;
+  outline: 0 none;
+}
+
+.action a:hover{
+  cursor: pointer;
+}
+
+::-webkit-input-placeholder {
+     color: #39da08;
+}
+
+.status_mark{
+    height: 20px;
+    display: inline-block;
+    padding: 2px;
+}
+
+.status_mark:before {
+    line-height: 15px;
+    display: inline-block;
+    vertical-align: middle;
+    height: 15px;
+    margin-right: 5px;
+    width: 10px;
+    text-align: center;
+}
+.status_0:before{
+    content: "✔";
+}
+.status_1:before{
+    content: "✘";
+}
+.status_2:before{
+    content: "☺";
+}
+
+.room_rule p:after{
+    line-height: 15px;
+    display: inline-block;
+    vertical-align: middle;
+    height: 15px;
+    margin-right: 5px;
+    width: 10px;
+    text-align: center;
+    content: "(✘)"
+}
+
+.room_rule .rule_enabled:after{
+    content: "(✔)";
+}
+
+.lobby-buttons li{
+    text-align: center;
+    height: 50px;
+    line-height: 50px;
+    margin: 30px 0;
+    cursor: pointer;
+}
+
+.lobby-title {
+    text-align: center;
+}
+
+input.room_number{
+    width: 50px;
+    height: 10px;
+    line-height: 10px;
+}
+
