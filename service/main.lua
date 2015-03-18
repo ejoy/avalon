@@ -2,6 +2,7 @@ local skynet = require "skynet"
 local socket = require "socket"
 
 skynet.start(function()
+	skynet.newservice("debug_console",8000)
 	assert(skynet.uniqueservice "roomkeeper")
 	local broker_n = tonumber(skynet.getenv "broker")
 	local broker = {}
