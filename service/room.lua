@@ -64,10 +64,11 @@ end
 
 local function update_status()
 	if next(R.push_tbl) then
-		for _, co in pairs(R.push_tbl) do
+		local push_tbl = R.push_tbl
+		R.push_tbl = {}
+		for _, co in pairs(push_tbl) do
 			skynet.wakeup(co)
 		end
-		R.push_tbl = {}
 	end
 	if R.cache then
 		return R.cache
@@ -76,15 +77,10 @@ local function update_status()
 		local tmp = {}
 		for k, v in pairs(R.user_tbl) do
 			table.insert(tmp,string.format(
-				'{"userid":%d,"username":"%s","status":%d}',
+				'{"userid":%d,"username":"%s","status":%d,"color":"#ffffff"}',
 				v.userid, v.username, v.status))
 		end
-		for k, v in pairs(R.user_tbl) do
-			table.insert(tmp,string.format(
-				'{"userid":%d,"username":"%s","status":%d}',
-				v.userid, v.username, v.status))
-		end
-		R.cache = string.format('{"status":"prepare","player":[%s],"rule":[%s]},version:%d',
+		R.cache = string.format('{"status":"prepare","player":[%s],"rule":[%s],"version":%d}',
 			table.concat(tmp, ","), table.concat(R.rulelist, ","), R.version)
 	else
 		-- todo game
@@ -187,6 +183,7 @@ function api.request(args)
 	local version = tonumber(args.version)
 	local co = R.push_tbl[userid]
 	if co then
+		R.push_tbl[userid] = nil
 		skynet.wakeup(co)
 	end
 	if version ~= 0 and version == R.version then
