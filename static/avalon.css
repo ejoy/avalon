@@ -20,6 +20,7 @@ ul {
 .inner {
   width: 85%;
   margin: 0 auto;
+  min-height: 300px;
 }
 
 .room_title{
@@ -29,6 +30,7 @@ ul {
 .people{
   overflow: hidden;
   margin: 20px 0;
+  /*min-height: 48px;*/
 }
 
 .people div{
@@ -38,6 +40,14 @@ ul {
 
 .people .status_mark{
   margin-right: 5px;
+}
+
+.people_status{
+    min-height: 61px;
+}
+ 
+.people_status div{
+    margin: 5px;
 }
 
 .people_status span{

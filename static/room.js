@@ -2,11 +2,14 @@
 // 返回结果 更新 页面内容
 // cookie 获取当前用户的user_id
 // click 操作的 绑定
-var room_number;
-var version;
+var room_number, version, userid;
+var user_ready = false;
+
 document.addEventListener("DOMContentLoaded", function(){
+    userid = Ejoy.getCookie('userid');
     set_room_number();
-    set_room_content();
+    set_room_content(0, true);
+    bind_action()
 });
 
 function set_room_number(){
@@ -15,26 +18,36 @@ function set_room_number(){
     Ejoy('room_number').html(room_number) 
 }
 
-function set_room_content(){
+function set_room_content(v, poll_begin){
     var req = {
         roomid: room_number,
         status: 'prepare',
         action: 'request',
-        version: 0
+        version: v ? v : 0
     }
     Ejoy.postJSON('/room', req, function(resp){
-        //resp = {
-            //player: [{userid: '1233', username: "xxx_name1", color: "green", status: 0 },
-                //{userid: '1235', username: "xxx_name3", color: "red", status: 2 },],
-                //rule: [ 2, 3 ]
-        //} 
-
-        Ejoy('people_num').html(resp.player.length)
-        render_players(resp.player)
-        render_people_status(resp.player)
-        render_rules(resp.rule)
-
-        bind_action()
+        console.log('request', resp)
+        version = resp.version;
+        console.log(version)
+        if(resp.status){
+            console.log(resp.status)
+            if(resp.status == "game"){
+               // 处理其他 异步的请求  返回game时 的处理
+               return Ejoy('inner').html("游戏开始")  
+            }
+        }
+        if(resp.player){
+            Ejoy('people_num').html(resp.player.length)
+            render_players(resp.player)
+            render_people_status(resp.player)
+        }
+        if(resp.rule){
+            render_rules(resp.rule)
+        }
+        if(poll_begin){
+            console.log("polling")
+            set_room_content(version, true)
+        }
     })
 }
 
@@ -57,6 +70,9 @@ function render_players(players){
 }
 
 function render_rules(rules){
+    if(!rules){
+        rules = []
+    }
     var rules_str = ""
     rules_dom = document.getElementsByClassName("room_rule")[0].children
     for(var i = 0; i < rules.length; i++){
@@ -92,7 +108,7 @@ function bind_action(){
     Ejoy('people').on("click", "people_item", function(select_dom){
         var userid = select_dom.id;
         console.log(userid)
-        //kick_user(userid)
+        kick_user(userid, select_dom.children[0])
     });
 
     Ejoy('room_rule').on('click', 'rule_item', function(select_dom){
@@ -104,19 +120,20 @@ function bind_action(){
         }else{
             select_dom.className = "rule_item"
         }
-        console.log(rule_num, enabled)
-        //set_rule(rule_num, enabled)
+        set_rule(rule_num, enabled)
     })
     
     Ejoy('action_button').on('click', function(e){
         var name = e.target.previousElementSibling.value
-        console.log(name)
-        //set_user_name(name)
+        if(!name){
+            return alert("请输入名字");
+        }
+        set_user_name(name)
     })
 }
 
 
-function kick_user(userid){
+function kick_user(userid, select_dom){
     var req = {
         roomid: room_number,
         status: 'prepare',
@@ -125,7 +142,13 @@ function kick_user(userid){
 
         id: userid
     }
-    Ejoy.postJSON('/room', req, function(resp){});
+    Ejoy.postJSON('/room', req, function(resp){
+        console.log(resp)
+        if(!resp.error){
+            select_dom.className = select_dom.className.replace(/status_\d/, 'status_2')
+            set_room_content()
+        }
+    });
     
 }
 
@@ -133,12 +156,17 @@ function set_user_name(username){
     var req = {
         roomid: room_number,
         status: 'prepare',
-        action: 'set_name',
+        action: 'setname',
         version: version,
-
         username: username
     }
-    Ejoy.postJSON('/room', req, function(resp){});
+    Ejoy.postJSON('/room', req, function(resp){
+        if(!resp.error){
+            name_span = document.getElementById(userid).children[0]            
+            name_span.innerHTML = username
+            set_ready()
+        }
+    });
 
 }
 
@@ -152,6 +180,27 @@ function set_rule(rule_num, enable){
         rule: rule_num,
         enable: enable
     }
-    Ejoy.postJSON('/room', req, function(resp){});
+    Ejoy.postJSON('/room', req, function(resp){
+        console.log('set', resp)
+    });
 
+}
+
+function set_ready(){
+    var req = {
+        roomid: room_number,
+        status: 'prepare',
+        action: 'ready',
+        version: version,
+        enable: !user_ready,
+    }
+    Ejoy.postJSON('/room', req, function(resp){
+       console.log(resp)         
+       if(!resp.error){
+           user_ready = !user_ready
+           dom = document.getElementsByClassName('action_button')[0]
+           dom.innerHTML = ( "准备" == dom.innerHTML ) ? "取消准备": "准备"
+           set_room_content();
+       }
+    })
 }

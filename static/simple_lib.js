@@ -18,13 +18,26 @@ Ejoy.postJSON = function(url, req, callback){
     //xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xmlhttp.onreadystatechange = function() {
        if (xmlhttp.readyState == 4) {
-           callback(JSON.parse(xmlhttp.responseText))
-          }
+           try{
+               data = JSON.parse(xmlhttp.responseText)
+           }
+           catch(e){
+               return console.log(e)
+           }
+           callback(data)
+       }
     }
     //xmlhttp.send(JSON.stringify(req));
     xmlhttp.send(Ejoy.url_params(req));
 
 }
+
+Ejoy.getCookie = function(sKey){
+    if (!sKey) { return null; }
+    return decodeURIComponent(
+        document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")
+    ) || null;
+} 
 
 Ejoy.fn = Ejoy.prototype = {constructor: Ejoy};
 
