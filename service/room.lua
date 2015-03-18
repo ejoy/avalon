@@ -84,8 +84,8 @@ local function update_status()
 				'{"userid":%d,"username":"%s","status":%d}',
 				v.userid, v.username, v.status))
 		end
-		R.cache = string.format('{"status":"prepare","player":[%s],"rule":[%s]}',
-			table.concat(tmp, ","), table.concat(R.rulelist, ","))
+		R.cache = string.format('{"status":"prepare","player":[%s],"rule":[%s]},version:%s',
+			table.concat(tmp, ","), table.concat(R.rulelist, ","), R.version)
 	else
 		-- todo game
 		assert (R.status == "game")
@@ -105,10 +105,9 @@ function api.setname(args)
 		u.username = username
 		R.version = R.version + 1
 		R.cache = nil
-		return update_status()
-	else
-		return '{"status":"ok"}'
 	end
+
+	return '{"status":"ok"}'
 end
 
 function api.ready(args)
@@ -130,10 +129,9 @@ function api.ready(args)
 	if updated then
 		R.version = R.version + 1
 		R.cache = nil
-		return update_status()
-	else
-		return '{"status":"ok"}'
 	end
+
+	return '{"status":"ok"}'
 end
 
 function api.kick(args)
@@ -144,10 +142,9 @@ function api.kick(args)
 		u.status = BLOCK
 		R.version = R.version + 1
 		R.cache = nil
-		return update_status()
-	else
-		return '{"status":"ok"}'
 	end
+
+	return '{"status":"ok"}'
 end
 
 function api.set(args)
@@ -181,10 +178,9 @@ function api.set(args)
 		end
 		R.version = R.version + 1
 		R.cache = nil
-		return update_status()
-	else
-		return '{"status":"ok"}'
 	end
+
+	return '{"status":"ok"}'
 end
 
 function api.request(args)
@@ -192,10 +188,18 @@ function api.request(args)
 	local version = tonumber(args.version)
 	print('--request', version, R.version)
 	if version ~= 0 and version == R.version then
+		local co = R.push_tbl[userid]
+		if co then
+			skynet.wakeup(co)
+		end
 		local co = coroutine.running()
 		R.push_tbl[userid] = co
 		skynet.sleep(PUSH_TIME)
-		return update_status()
+		if version == R.version then
+			return string.format('{"version":%s}', version)
+		else
+			return update_status()
+		end
 	end
 	return update_status()
 end
