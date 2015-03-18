@@ -11,6 +11,7 @@ local R = { version = 1, user_tbl = {}, rulelist = {}, push_tbl={} }
 local READY = 0
 local NOTREADY = 1
 local BLOCK = 2
+local PUSH_TIME = 100 * 60
 
 local roomkeeper
 local alive
@@ -62,25 +63,29 @@ function room.web(userid, username)
 end
 
 local function update_status()
-    if next(R.push_tbl) then
-        for _, data in pairs(R.push_tbl) do
-            local co = data[1]
-            coroutine.resume(co)
-        end
-        R.push_tbl = {}
-    end
+	if next(R.push_tbl) then
+		for _, co in pairs(R.push_tbl) do
+			skynet.wakeup(co)
+		end
+		R.push_tbl = {}
+	end
 	if R.cache then
 		return R.cache
 	end
 	if R.status == "prepare" then
 		local tmp = {}
-		for k,v in pairs(R.user_tbl) do
+		for k, v in pairs(R.user_tbl) do
 			table.insert(tmp,string.format(
 				'{"userid":%d,"username":"%s","status":%d}',
 				v.userid, v.username, v.status))
 		end
-		R.cache = string.format('{"status":"prepare","player":[%s]}',
-			table.concat(tmp,","))
+		for k, v in pairs(R.user_tbl) do
+			table.insert(tmp,string.format(
+				'{"userid":%d,"username":"%s","status":%d}',
+				v.userid, v.username, v.status))
+		end
+		R.cache = string.format('{"status":"prepare","player":[%s],"rule":[%s]}',
+			table.concat(tmp, ","), table.concat(R.rulelist, ","))
 	else
 		-- todo game
 		assert (R.status == "game")
@@ -184,14 +189,14 @@ end
 
 function api.request(args)
 	local userid = args.userid
-    local version = tonumber(args.version)
-    print('--request', version, R.version)
-    if version ~= 0 and version == R.version then
-        local co = coroutine.running()
-        R.push_tbl[userid] = {co, skynet.now()}
-        coroutine.yield()
-        return update_status()
-    end
+	local version = tonumber(args.version)
+	print('--request', version, R.version)
+	if version ~= 0 and version == R.version then
+		local co = coroutine.running()
+		R.push_tbl[userid] = co
+		skynet.sleep(PUSH_TIME)
+		return update_status()
+	end
 	return update_status()
 end
 
