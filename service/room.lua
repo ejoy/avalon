@@ -11,6 +11,7 @@ local R = { version = 1, user_tbl = {}, rulelist = {}, push_tbl={} }
 local READY = 0
 local NOTREADY = 1
 local BLOCK = 2
+local PUSH_TIME = 100 * 60
 
 local roomkeeper
 local alive
@@ -62,25 +63,25 @@ function room.web(userid, username)
 end
 
 local function update_status()
-    if next(R.push_tbl) then
-        for _, data in pairs(R.push_tbl) do
-            local co = data[1]
-            coroutine.resume(co)
-        end
-        R.push_tbl = {}
-    end
+	if next(R.push_tbl) then
+		local push_tbl = R.push_tbl
+		R.push_tbl = {}
+		for _, co in pairs(push_tbl) do
+			skynet.wakeup(co)
+		end
+	end
 	if R.cache then
 		return R.cache
 	end
 	if R.status == "prepare" then
 		local tmp = {}
-		for k,v in pairs(R.user_tbl) do
+		for k, v in pairs(R.user_tbl) do
 			table.insert(tmp,string.format(
-				'{"userid":%d,"username":"%s","status":%d}',
+				'{"userid":%d,"username":"%s","status":%d,"color":"#ffffff"}',
 				v.userid, v.username, v.status))
 		end
-		R.cache = string.format('{"status":"prepare","player":[%s]}',
-			table.concat(tmp,","))
+		R.cache = string.format('{"status":"prepare","player":[%s],"rule":[%s],"version":%d}',
+			table.concat(tmp, ","), table.concat(R.rulelist, ","), R.version)
 	else
 		-- todo game
 		assert (R.status == "game")
@@ -94,20 +95,17 @@ function api.setname(args)
 	local userid = args.userid
 	local username = args.username
 	local u = R.user_tbl[userid]
-	print('--setname', args.username, username)
 	if u.username ~= username then
 		skynet.call(userservice, "lua", userid, username)
 		u.username = username
 		R.version = R.version + 1
 		R.cache = nil
-		return update_status()
-	else
-		return '{"status":"ok"}'
 	end
+
+	return '{"status":"ok"}'
 end
 
 function api.ready(args)
-	print('--ready', args.enable)
 	local userid = args.userid
 	local enable = (args.enable == 'true')
 	local u = R.user_tbl[userid]
@@ -125,28 +123,27 @@ function api.ready(args)
 	if updated then
 		R.version = R.version + 1
 		R.cache = nil
-		return update_status()
-	else
-		return '{"status":"ok"}'
 	end
+
+	return '{"status":"ok"}'
 end
 
 function api.kick(args)
-	print('--kick', args.id)
 	local id = tonumber(args.id)
 	local u = R.user_tbl[id]
+	if not u then
+		return '{"status":"error"}'
+	end
 	if u.status ~= BLOCK then
 		u.status = BLOCK
 		R.version = R.version + 1
 		R.cache = nil
-		return update_status()
-	else
-		return '{"status":"ok"}'
 	end
+
+	return '{"status":"ok"}'
 end
 
 function api.set(args)
-	print('--set', args.rule, args.enable)
 	local rule = tonumber(args.rule)
 	local enable = (args.enable == 'true')
 	local index
@@ -176,22 +173,29 @@ function api.set(args)
 		end
 		R.version = R.version + 1
 		R.cache = nil
-		return update_status()
-	else
-		return '{"status":"ok"}'
 	end
+
+	return '{"status":"ok"}'
 end
 
 function api.request(args)
 	local userid = args.userid
-    local version = tonumber(args.version)
-    print('--request', version, R.version)
-    if version ~= 0 and version == R.version then
-        local co = coroutine.running()
-        R.push_tbl[userid] = {co, skynet.now()}
-        coroutine.yield()
-        return update_status()
-    end
+	local version = tonumber(args.version)
+	local co = R.push_tbl[userid]
+	if co then
+		R.push_tbl[userid] = nil
+		skynet.wakeup(co)
+	end
+	if version ~= 0 and version == R.version then
+		local co = coroutine.running()
+		R.push_tbl[userid] = co
+		skynet.sleep(PUSH_TIME)
+		if version == R.version then
+			return string.format('{"version":%d}', version)
+		else
+			return update_status()
+		end
+	end
 	return update_status()
 end
 
