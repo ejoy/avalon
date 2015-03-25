@@ -17,7 +17,7 @@ local function create_userid()
 	if ti > lastid then
 		lastid = ti
 	else
-		lastid = ti + 1
+		lastid = lastid + 1
 	end
 	return lastid, new_username(lastid)
 end
