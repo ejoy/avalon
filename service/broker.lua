@@ -36,11 +36,12 @@ local function get_userid(header)
 	return skynet.call(userservice, "lua", userid)
 end
 
-local userid_cookie = setmetatable({} , { __mode = "kv",
+local userid_header = setmetatable({} , { __mode = "kv",
 	__index = function(t,k)
 		local v = {
 			["Set-Cookie"] = string.format(
-				"userid=%d; Path=/; Max-Age=2592000", k)
+				"userid=%d; Path=/; Max-Age=2592000", k),
+			["Content-Type"] = "text/html; charset=utf-8"
 		}
 		t[k] = v
 		return v
@@ -110,13 +111,13 @@ local function handle_socket(id)
 					if room then
 						local userid, username = get_userid(header)
 						local c, body = dispatch_room(room, userid, username)
-						response(id, c, body, userid_cookie[userid])
+						response(id, c, body, userid_header[userid])
 					else
 						response(id, 404, "404 Not found")
 					end
 				else
 					local userid, username = get_userid(header)
-					response(id, 200, f(body, userid, username), userid_cookie[userid])
+					response(id, 200, f(body, userid, username), userid_header[userid])
 				end
 			end
 		end
