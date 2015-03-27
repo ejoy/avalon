@@ -64,10 +64,10 @@ function room.web(userid, username)
 end
 
 local function update_status()
-	local _, co = next(R.push_tbl)
+	local idx, co = next(R.push_tbl)
 	while(co) do
 		skynet.wakeup(co)
-		_, co = next(R.push_tbl)
+		idx, co = next(R.push_tbl, idx)
 	end
 	if R.cache then
 		return R.cache
