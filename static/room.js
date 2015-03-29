@@ -33,6 +33,7 @@ function set_room_content(v, poll_begin){
             console.log(resp.status)
             if(resp.status == "game"){
                // 处理其他 异步的请求  返回game时 的处理
+               fetch_role_info();
                return Ejoy('inner').html("游戏开始")  
             }
         }
@@ -201,6 +202,42 @@ function set_ready(){
            dom = document.getElementsByClassName('action_button')[0]
            dom.innerHTML = ( "准备" == dom.innerHTML ) ? "取消准备": "准备"
            set_room_content();
+       }
+    })
+}
+
+/*
+ * 顶部身份信息，以及可见信息
+ * role_info 由服务器返回 格式：
+ *  identity = {}       我的身份 name, desc
+ *  information = {}    可见信息
+ *  player = {}         用户id 昵称 颜色
+ */
+var role_info;
+
+function show_role_info() {
+    document.getElementsByClassName("top_message")[0].style.display = "block";
+    Ejoy("top_identity").html(role_info.identity.name);
+    Ejoy("top_desc").html(role_info.identity.desc);
+
+}
+
+function hide_role_info() {
+
+}
+
+function fetch_role_info() {
+    var req = {
+        roomid: room_number,
+        status: 'game',
+        action: 'list',
+        version: version
+    }
+    Ejoy.postJSON('/room', req, function(resp) {
+       console.log(resp)         
+       if (!resp.error) {
+            role_info = resp;
+            show_role_info();
        }
     })
 }
