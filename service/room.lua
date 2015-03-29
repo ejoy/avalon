@@ -247,7 +247,7 @@ function api.list(args)
 			if visible == 3 and R.rules[3] or visible == true then
 				local identity_name = rule.role[u.identity]
 				table.insert(tmp_information, string.format(
-					'{"%d":%s}',
+					'{"%d":"%s"}',
 					u.userid, identity_name))
 			end
 		end
@@ -259,7 +259,7 @@ function api.list(args)
 			'{"userid":%d,"username":"%s","color":"#ffffff"}',
 			v.userid, v.username))
 	end
-	local response = string.format('{"player":[%s],"identity":{"name":%s,"desc"%s},"information":[%s]}',
+	local response = string.format('{"player":[%s],"identity":{"name":"%s","desc":"%s"},"information":[%s]}',
 		table.concat(tmp_player, ","), identity_name, "", table.concat(tmp_information, ","))
 	return response
 end
