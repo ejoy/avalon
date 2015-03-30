@@ -10,42 +10,75 @@
   <script type="text/javascript" src="/static/simple_lib.js"></script>
   </head>
   <body>
-    <div class="top_message">
-      <div class="top_content">
-        <div class="top_identity">身份</div>
-        <div class="top_desc">身份描述</div>
-        <div class="top_tip">你看见</div>
-        <div class="top_information">其他玩家信息</div>
-      </div>
-      <div class="top_btn">身份</div>
-    </div>
     <div class="outter wrapper">
-      <div class="room_title"><span class="room_number"></span> 号 <span class="people_num"></span> 人房间</div>
-      <div style="margin-top: 10px; text-align: center;">提示: 游戏准备中... need ...</div>
+      <div class="prepare">
+          <div class="room_title"><span class="room_number"></span> 号 <span class="people_num"></span> 人房间</div>
+          <div style="margin-top: 10px; text-align: center;">提示: 游戏准备中... need ...</div>
 
-      <div class="inner">
-        <div class="people">
-        </div>
+          <div class="inner">
 
-        <div class="people_status">
-        </div>
+            <div class="people">
+            </div>
 
-        <div class="room_rule wrapper">
-          <p class="rule_item" data-rule="0">房间可选规则
-          <p class="rule_item" data-rule="1">房间可选规则
-          <p class="rule_item" data-rule="2">房间可选规则
-          <p class="rule_item" data-rule="3">房间可选规则
-          <p class="rule_item" data-rule="4">房间可选规则
-          <p class="rule_item" data-rule="5">房间可选规则
-        </div>
+            <div class="people_status">
+            </div>
 
-        <div class="action">
-          <input type="text" placeholder="名字"> <a class="action_button">准备</a> 
-        </div>
+            <div class="room_rule wrapper">
+              <p class="rule_item" data-rule="0">房间可选规则
+              <p class="rule_item" data-rule="1">房间可选规则
+              <p class="rule_item" data-rule="2">房间可选规则
+              <p class="rule_item" data-rule="3">房间可选规则
+              <p class="rule_item" data-rule="4">房间可选规则
+              <p class="rule_item" data-rule="5">房间可选规则
+            </div>
 
+            <div class="action">
+              <input type="text" placeholder="名字" class="action_value"> <a class="action_button">准备</a> 
+            </div>
+
+          </div>
+      </div>
+
+      <div class="game">
+          <div class="role">
+                <h5 class="role_name">亚瑟的骑士</h5> 
+                <p class="role-desc">
+                    正义的一方， 保护梅林，对抗爪牙。。。 
+                </p>
+
+                <div class="role-visible">
+                    <span>用户1</span>
+                    <span>用户2</span>
+                    <span>用户3</span>
+                </div>
+
+                <div class="role-button wrapper">身份</div>
+          </div> 
+
+          <div class="ground">
+              <h4>###<span>提案阶段</span>###</h4> 
+              <div class="stage_desc"><span>任务x 第x个提案</span> <span class="plan-button"> [提案] </span></div>
+                
+              <div class="game-people">
+                <div class="people_item" id="6577092"><span class="status_mark status_0" style="color:undefined">u374837</span></div> 
+                <div class="people_item" id="6577092"><span class="status_mark status_0" style="color:undefined">u374837</span></div> 
+                <div class="people_item" id="6577092"><span class="status_mark status_0" style="color:undefined">u374837</span></div> 
+                <div class="people_item" id="6577092"><span class="status_mark status_0" style="color:undefined">u374837</span></div> 
+                <div class="people_item" id="6577092"><span class="status_mark status_0" style="color:undefined">u374837</span></div> 
+              </div>
+
+              <div class="game_action">
+                  <button class="plan-cancel">取消</button>
+                  <button class="plan-commit">提议</button>
+              </div>
+
+              <div class="game-history">
+              </div>
+          </div>
       </div>
     </div>
 
     <script type="text/javascript" src="/static/room.js"></script>
+    <script type="text/javascript" src="/static/game.js"></script>
   </body>
 </html>

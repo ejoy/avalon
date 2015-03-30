@@ -5,6 +5,13 @@ var Ejoy = function(selector){
   return new Ejoy.fn.init(selector);
 }
 
+Ejoy.array_remove = function(array, target){
+    var index = array.indexOf(target);
+    if (index > -1) {
+        array.splice(index, 1);
+    }
+}
+
 Ejoy.url_params = function(dict){
   var str = ""
   for( k in dict){
@@ -19,7 +26,7 @@ Ejoy.postJSON = function(url, req, callback){
     xmlhttp.onreadystatechange = function() {
        if (xmlhttp.readyState == 4) {
            try{
-               data = JSON.parse(xmlhttp.responseText)
+               var data = JSON.parse(xmlhttp.responseText)
            }
            catch(e){
                return console.log(e)
