@@ -49,11 +49,32 @@ document.addEventListener("DOMContentLoaded", function(){
             if(resp.rule){
                 render_rules(resp.rule)
             }
+
+            render_game_status(resp.reason)
+            render_begin_button(resp.can_game)
+
+
             if(poll_begin){
                 console.log("polling")
                 set_room_content(version, true)
             }
         })
+    }
+
+    function render_game_status(reason) {
+        if (reason) {
+            Ejoy("game-status").html(reason)
+        } else {
+            Ejoy("game-status").html("")
+        }
+    }
+
+    function render_begin_button(can_game) {
+        if (can_game) {
+            Ejoy("begin_button").html("开始")
+        } else {
+            Ejoy("begin_button").html("")
+        }
     }
 
     function prepare_clear(){
@@ -157,6 +178,10 @@ document.addEventListener("DOMContentLoaded", function(){
             }
             set_user_name(name)
         })
+
+        Ejoy("begin_button").on("click", function (e){
+            begin_game()
+        })
     }
 
 
@@ -227,4 +252,17 @@ document.addEventListener("DOMContentLoaded", function(){
         })
     }
 
+    function begin_game() {
+        var req = {
+            roomid: room_number,
+            status: "prepare",
+            action: "begin_game",
+            version:version,
+        }
+        Ejoy.postJSON('/room', req, function(resp){
+            if(!resp.error){
+                set_room_content();
+            }
+        })
+    }
 });

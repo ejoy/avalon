@@ -75,7 +75,7 @@ function M.checkrules(rules, n)
 		for i=1,n-camp_good[n] do
 			table.insert(ret, 10)
 		end
-		return randomrole(ret)
+		return true, randomrole(ret)
 	end
 	local lancelot = 0
 	for i=6,8 do
@@ -124,7 +124,7 @@ function M.checkrules(rules, n)
 	for i = 1,n-camp_good[n] -  evil do
 		table.insert(ret, 10)
 	end
-	return randomrole(ret)
+	return true, randomrole(ret)
 end
 
 return M

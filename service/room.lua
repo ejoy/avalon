@@ -3,6 +3,7 @@ local log = require "log"
 local table = table
 local staticfile = require "staticfile"
 local rule = require "rule"
+local json = require"json"
 
 local content = staticfile["room.html"]
 
@@ -58,6 +59,22 @@ local function enter_room(userid, username)
 	R.cache = nil
 end
 
+local function incversion()
+    R.version = R.version + 1
+    R.cache = nil
+end
+
+local function checkrule()
+    local ready_num = 0
+    for _, u in pairs(R.user_tbl) do
+        if u.status == READY then
+            ready_num = ready_num + 1
+        end
+    end
+
+    return rule.checkrules(R.rules, ready_num)
+end
+
 function room.web(userid, username)
 	enter_room(userid, username)
 	return content
@@ -73,22 +90,25 @@ local function update_status()
 		return R.cache
 	end
 	if R.status == "prepare" then
-		local tmp = {}
-		for k, v in pairs(R.user_tbl) do
-			table.insert(tmp,string.format(
-				'{"userid":%d,"username":"%s","status":%d,"color":"#ffffff"}',
-				v.userid, v.username, v.status))
+        local info = {status = "prepare", player = {}, rule = {}, version = R.version}
+        info.can_game, result = checkrule()
+        info.reason = info.can_game and "" or result
+
+		for _, v in pairs(R.user_tbl) do
+            table.insert(info.player, {
+                             userid = v.userid,
+                             username = v.username,
+                             status = v.status})
 		end
-		local rulelist = {}
 		for rule in pairs(R.rules) do
-			table.insert(rulelist, rule)
+			table.insert(info.rule, rule)
 		end
-		R.cache = string.format('{"status":"prepare","player":[%s],"rule":[%s],"version":%d}',
-			table.concat(tmp, ","), table.concat(rulelist, ","), R.version)
+		R.cache = json.encode(info)
 	else
 		-- todo game
 		assert (R.status == "game")
-		R.cache = string.format('{"status":"game"}')
+        local info = {status = "game", version = R.version}
+		R.cache = json.encode(info)
 	end
 	return R.cache
 end
@@ -102,12 +122,29 @@ function api.setname(args)
 	if u.username ~= username then
 		skynet.call(userservice, "lua", userid, username)
 		u.username = username
-		R.version = R.version + 1
-		R.cache = nil
+        incversion()
 		update_status()
 	end
 
 	return '{"status":"ok"}'
+end
+
+function api.begin_game(_)
+    local ok,result = checkrule()
+    if ok then
+        local i = 1
+        for _, u in pairs(R.user_tbl) do
+            if u.status == READY then
+                u.identity = result[i]
+                i = i + 1
+            end
+        end
+        R.needs = ""
+        R.status = "game"
+        incversion()
+    end
+
+    return '{"status":"ok"}'
 end
 
 function api.ready(args)
@@ -139,26 +176,10 @@ function api.ready(args)
 				end
 			end
 			if can_game then
-				local result, err = rule.checkrules(R.rules, ready_num)
-				if err then
-					R.needs = err
-				else
-					local i = 1
-					for _, u in pairs(R.user_tbl) do
-						if u.status == READY then
-							u.identity = result[i]
-							i = i + 1
-						end
-					end
-					R.needs = ""
-					R.status = "game"
-				end
 			end
 		end
 
-		R.version = R.version + 1
-		R.cache = nil
-		update_status()
+        incversion()
 	end
 
 	return '{"status":"ok"}'
@@ -172,8 +193,7 @@ function api.kick(args)
 	end
 	if u.status ~= BLOCK then
 		u.status = BLOCK
-		R.version = R.version + 1
-		R.cache = nil
+        incversion()
 		update_status()
 	end
 
