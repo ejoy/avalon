@@ -12,77 +12,51 @@ local function main()
 	return content
 end
 
-local function gen_result(result)
-	local status = result.status
-	if status == "ok" then
-		return string.format('{"status":"ok","username":"%s"}', result.username)
-	elseif status == "error" then
-		return string.format('{"status":"error","error":"%s"}', result.error)
-	elseif status == "join" then
-		return string.format('{"status":"join","room":%d}', result.roomid)
-	end
-	return ""
-end
-
 local action = {}
 
-function action.getname(userid, username, args, result)
-	result.status = "ok"
-	result.username = username
+function action.getname(userid, username, args)
+	return {username = username}
 end
 
-function action.setname(userid, username, args, result)
+function action.setname(userid, username, args)
 	local userid, username = skynet.call(userservice, "lua", userid, args.username)
-	result.status = "ok"
-	result.username = username
+    return {username = username}
 end
 
-function action.create(userid, username, args, result)
+function action.create(userid, username, args)
 	local ok, roomid = skynet.call(roomkeeper, "lua", "open")
-	if ok then
-		result.status = "join"
-		result.roomid = roomid
-	else
-		result.status = "error"
-		result.error = roomid
-	end
+	return ok and {room = roomid} or {error = roomid}
 end
 
-function action.join(userid, username, args, result)
+function action.join(userid, username, args)
 	local roomid = tonumber(args.roomid)
 	if roomid and skynet.call(roomkeeper, "lua", "query", roomid) then
-		result.status = "join"
-		result.roomid = roomid
+        return {roomid = roomid}
 	else
-		result.status = "error"
-		result.error = "Invalid room id"
+        return {error = "invalid room id"}
 	end
 end
 
 skynet.start(function()
 	userservice = assert(skynet.uniqueservice "userid")
 	roomkeeper = assert(skynet.uniqueservice "roomkeeper")
-	local result = {}
 	skynet.dispatch("lua", function(_,_, cmd, userid, username, body)
 		if cmd == "web" then
 			skynet.ret(skynet.pack(main(httpheader)))
 		elseif cmd == "api" then
 			-- lobby api
 			local args = urllib.parse_query(body)
+            local ret = {username = username}
 			if args then
 				local f = action[args.action]
-				if f then
-					f(userid, username, args, result)
-				else
-					result.status = "error"
-					result.error = "Invalid Action"
-				end
-			else
-				result.status = "ok"
-				result.username = username
+                if f then
+                    ret = f(userid, username, args)
+                else
+                    ret = {error = "Invalid Action"}
+                end
 			end
 
-			skynet.ret(skynet.pack(gen_result(result)))
+			skynet.ret(skynet.pack(ret))
 		end
 	end)
 end)

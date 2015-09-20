@@ -181,8 +181,6 @@ function api.ready(args)
 
         incversion()
 	end
-
-	return '{"status":"ok"}'
 end
 
 function api.kick(args)
@@ -227,8 +225,6 @@ function api.set(args)
 		R.cache = nil
 		update_status()
 	end
-
-	return '{"status":"ok"}'
 end
 
 function api.request(args)
@@ -244,7 +240,7 @@ function api.request(args)
 		skynet.sleep(PUSH_TIME)
 		R.push_tbl[userid] = nil
 		if version == R.version then
-			return string.format('{"version":%d}', version)
+			return {version = version}
 		else
 			return update_status()
 		end
@@ -256,7 +252,7 @@ function api.list(args)
 	local userid = args.userid
 	local u = R.user_tbl[userid]
 	if not u.identity then
-		return '{"status":"error"}'
+		return {error = "您未分配角色"}
 	end
 	local identity_name = rule.role[u.identity]
 	local role_visible = rule.visible[u.identity]
@@ -266,22 +262,21 @@ function api.list(args)
 			local visible = role_visible[u.identity]
 			if visible == 3 and R.rules[3] or visible == true then
 				local identity_name = rule.role[u.identity]
-				table.insert(tmp_information, string.format(
-					'{"%d":"%s"}',
-					u.userid, identity_name))
+				table.insert(tmp_information, {[u.userid]=identity_name})
 			end
 		end
 	end
 
 	local tmp_player = {}
 	for k, v in pairs(R.user_tbl) do
-		table.insert(tmp_player, string.format(
-			'{"userid":%d,"username":"%s","color":"#ffffff"}',
-			v.userid, v.username))
+		table.insert(tmp_player, {userid = v.userid, username=v.username, color = "#ffffff"})
 	end
-	local response = string.format('{"player":[%s],"identity":{"name":"%s","desc":"%s"},"information":[%s]}',
-		table.concat(tmp_player, ","), identity_name, "", table.concat(tmp_information, ","))
-	return response
+
+    return {
+        player = tmp_player,
+        identity = {name = identity_name, desc = ""},
+        information = tmp_information
+    }
 end
 
 function room.api(args)
@@ -312,7 +307,12 @@ skynet.start(function()
 		alive = skynet.now()
 		local f = room[cmd]
 		if f then
-			skynet.ret(skynet.pack(f(...)))
+            local ok, ret = xpcall(f, debug.traceback, ...)
+            if not ok then
+                print(ret)
+                ret = {error = "server error"}
+            end
+			skynet.ret(skynet.pack(ret))
 		end
 	end)
 end)

@@ -5,6 +5,7 @@ local sockethelper = require "http.sockethelper"
 local urllib = require "http.url"
 local log = require "log"
 local staticfile = require "staticfile"
+local json = require"json"
 
 local roomkeeper
 local userservice
@@ -73,13 +74,13 @@ action_method["/room"] = function(body, userid, username)
 	return skynet.call(r, "lua", "api", args)
 end
 
-local function dispatch_room(room, userid, username)
-	local r = skynet.call(roomkeeper, "lua", "query", room)
+local function enter_room(room, userid, username, action)
+    local room = tonumber(action:sub(2))
+    local r = room and skynet.call(roomkeeper, "lua", "query", room)
 	if not r then
-		return 404, "Invalid or closed room."
+		return "Invalid or closed room.", 404
 	end
-	local body = skynet.call(r, "lua", "web", userid, username)
-	return 200, body
+	return skynet.call(r, "lua", "web", userid, username), 200
 end
 
 local function handle_socket(id)
@@ -105,20 +106,15 @@ local function handle_socket(id)
 					response(id, 404, "404 Not found")
 				end
 			else
-				local f = action_method[action]
-				if not f then
-					local room = tonumber(action:sub(2))
-					if room then
-						local userid, username = get_userid(header)
-						local c, body = dispatch_room(room, userid, username)
-						response(id, c, body, userid_header[userid])
-					else
-						response(id, 404, "404 Not found")
-					end
-				else
-					local userid, username = get_userid(header)
-					response(id, 200, f(body, userid, username), userid_header[userid])
-				end
+                local userid, username = get_userid(header)
+				local f = action_method[action] or enter_room
+                
+                local ret, c = f(body, userid, username, action)
+                if type(ret) ~= "string" then
+                    ret = json.encode(ret or {})
+                end
+                c = c or 200
+                response(id, c, ret, userid_header[userid])
 			end
 		end
 	else
