@@ -4,12 +4,18 @@ local table = table
 local staticfile = require "staticfile"
 local rule = require "rule"
 local json = require"json"
+local objproxy = require"objproxy"
 
 local content = staticfile["room.html"]
 
 local ALIVETIME = 100 * 60 * 10 -- 10 minutes
 
-local R = { version = 1, user_tbl = {}, rules = {}, push_tbl={} }
+local R = {
+    version = 1,
+    push_tbl={},
+    info = objproxy.new{user_tbl = {}, rules = {}}
+}
+
 local READY = 0
 local NOTREADY = 1
 local BLOCK = 2
@@ -40,7 +46,7 @@ local function heartbeat()
 end
 
 local function enter_room(userid, username)
-	local u = R.user_tbl[userid]
+	local u = R.info.user_tbl[userid]
 	if u then
 		u.timestamp = skynet.now()
 		if u.username == username then
@@ -48,59 +54,39 @@ local function enter_room(userid, username)
 		end
 		u.username = username
 	else
-		R.user_tbl[userid] = {
+		R.info.user_tbl[userid] = {
 			userid = userid,
 			username = username,
 			timestamp = skynet.now(),
 			status = NOTREADY,	-- not ready
 		}
 	end
-	R.version = R.version + 1
-	R.cache = nil
-end
-
-local function incversion()
-    R.version = R.version + 1
-    R.cache = nil
 end
 
 local function checkrule()
     local ready_num = 0
-    for _, u in pairs(R.user_tbl) do
+    for _, u in pairs(R.info.user_tbl) do
         if u.status == READY then
             ready_num = ready_num + 1
         end
     end
 
-    return rule.checkrules(R.rules, ready_num)
+    return rule.checkrules(R.info.rules, ready_num)
 end
 
-function room.web(userid, username)
-	enter_room(userid, username)
-	return content
-end
-
-local function update_status()
-	local idx, co = next(R.push_tbl)
-	while(co) do
-		skynet.wakeup(co)
-		idx, co = next(R.push_tbl, idx)
-	end
-	if R.cache then
-		return R.cache
-	end
-	if R.status == "prepare" then
+local function roominfo()
+    if R.status == "prepare" then
         local info = {status = "prepare", player = {}, rule = {}, version = R.version}
         info.can_game, result = checkrule()
         info.reason = info.can_game and "" or result
 
-		for _, v in pairs(R.user_tbl) do
+		for _, v in pairs(R.info.user_tbl) do
             table.insert(info.player, {
                              userid = v.userid,
                              username = v.username,
                              status = v.status})
 		end
-		for rule in pairs(R.rules) do
+		for rule in pairs(R.info.rules) do
 			table.insert(info.rule, rule)
 		end
 		R.cache = json.encode(info)
@@ -110,7 +96,13 @@ local function update_status()
         local info = {status = "game", version = R.version}
 		R.cache = json.encode(info)
 	end
-	return R.cache
+
+    return R.cache
+end
+
+function room.web(userid, username)
+	enter_room(userid, username)
+	return content
 end
 
 local api = {}
@@ -118,113 +110,50 @@ local api = {}
 function api.setname(args)
 	local userid = args.userid
 	local username = args.username
-	local u = R.user_tbl[userid]
+	local u = R.info.user_tbl[userid]
 	if u.username ~= username then
 		skynet.call(userservice, "lua", userid, username)
 		u.username = username
-        incversion()
-		update_status()
 	end
-
-	return '{"status":"ok"}'
 end
 
 function api.begin_game(_)
     local ok,result = checkrule()
     if ok then
         local i = 1
-        for _, u in pairs(R.user_tbl) do
+        local user_tbl = R.info.user_tbl
+        for _, u in pairs(user_tbl) do
             if u.status == READY then
                 u.identity = result[i]
                 i = i + 1
             end
         end
-        R.needs = ""
         R.status = "game"
-        incversion()
+        R.info = objproxy{user_tbl = user_tbl, round = 1,pass =1, rule = R.info.rules}
     end
-
-    return '{"status":"ok"}'
 end
 
 function api.ready(args)
 	local userid = args.userid
 	local enable = (args.enable == 'true')
-	local u = R.user_tbl[userid]
-	local updated = false
-	if enable then
-		if u.status ~= READY then
-			u.status = READY
-			updated = true
-		end
-	elseif u.status == READY then
-		u.status = NOTREADY
-		updated = true
-	end
-
-	if updated then
-		if enable then
-			local can_game = true
-			local ready_num = 0
-			for _, u in pairs(R.user_tbl) do
-				if u.status == READY then
-					ready_num = ready_num + 1
-				end
-				if u.status ~= READY and u.status ~= BLOCK then
-					can_game = false
-					break
-				end
-			end
-			if can_game then
-			end
-		end
-
-        incversion()
-	end
+	local u = R.info.user_tbl[userid]
+    u.status = enable and READY or NOTREADY
 end
 
 function api.kick(args)
 	local id = tonumber(args.id)
-	local u = R.user_tbl[id]
+	local u = R.info.user_tbl[id]
 	if not u then
-		return '{"status":"error"}'
+		return
 	end
-	if u.status ~= BLOCK then
-		u.status = BLOCK
-        incversion()
-		update_status()
-	end
-
-	return '{"status":"ok"}'
+    u.status = BLOCK
 end
 
 function api.set(args)
 	local rule = tonumber(args.rule)
-	local enable = (args.enable == 'true')
+	local enable = args.enable == 'true'
 
-	local updated = false
-	if enable then
-		if not R.rules[rule] then
-			R.rules[rule] = true
-			updated = true
-		end
-	else
-		if R.rules[rule] then
-			R.rules[rule] = nil
-			updated = true
-		end
-	end
-
-	if updated then
-		for _, u in pairs(R.user_tbl) do
-			if u.status == READY then
-				u.status = NOTREADY
-			end
-		end
-		R.version = R.version + 1
-		R.cache = nil
-		update_status()
-	end
+    R.info.rules[rule] = enable and true or nil
 end
 
 function api.request(args)
@@ -241,34 +170,39 @@ function api.request(args)
 		R.push_tbl[userid] = nil
 		if version == R.version then
 			return {version = version}
-		else
-			return update_status()
-		end
+        end
 	end
-	return update_status()
+	return roominfo()
 end
 
 function api.list(args)
 	local userid = args.userid
-	local u = R.user_tbl[userid]
+	local u = R.info.user_tbl[userid]
 	if not u.identity then
 		return {error = "您未分配角色"}
 	end
 	local identity_name = rule.role[u.identity]
 	local role_visible = rule.visible[u.identity]
 	local tmp_information = {}
-	for _, u in pairs(R.user_tbl) do
-		if u.identity then
-			local visible = role_visible[u.identity]
-			if visible == 3 and R.rules[3] or visible == true then
-				local identity_name = rule.role[u.identity]
-				table.insert(tmp_information, {[u.userid]=identity_name})
-			end
-		end
+	for _, u in pairs(R.info.user_tbl) do
+        local visible = role_visible[u.identity]
+        if visible then
+            local identity_name
+            if visible == true then
+                identity_name = rule.role[u.identity]
+            elseif visible == 4 then
+                identity_name = rule.camp_name[u.identity]
+            elseif visible == 3 and R.info.rules[8] then
+                identity_name = rule.role[u.identity]
+            end
+            if identity_name then
+                table.insert(tmp_information, {username = u.username, identity = identity_name})
+            end
+        end
 	end
 
 	local tmp_player = {}
-	for k, v in pairs(R.user_tbl) do
+	for k, v in pairs(R.info.user_tbl) do
 		table.insert(tmp_player, {userid = v.userid, username=v.username, color = "#ffffff"})
 	end
 
@@ -282,11 +216,11 @@ end
 function room.api(args)
 	local f = args.action and api[args.action]
 	if not f then
-		return '{"status":"error","error":"Invalid Action"}'
+		return {error = "Invalid Action"}
 	end
 	if args.status ~= R.status then
 		-- todo push status
-		return update_status()
+		return roominfo()
 	end
 	return f(args)
 end
@@ -297,6 +231,14 @@ function room.init(id)
 	R.status = "prepare"
 	R.needs = ""
 	log.printf("[Room:%d] open", id)
+end
+
+local function update_status()
+	local idx, co = next(R.push_tbl)
+	while(co) do
+		skynet.wakeup(co)
+		idx, co = next(R.push_tbl, idx)
+	end
 end
 
 skynet.start(function()
@@ -313,6 +255,13 @@ skynet.start(function()
                 ret = {error = "server error"}
             end
 			skynet.ret(skynet.pack(ret))
+
+            if objproxy.is_dirty(R.info) then
+                R.version = R.version + 1
+                R.cache = nil
+                objproxy.clean(R.info)
+                update_status()
+            end
 		end
 	end)
 end)

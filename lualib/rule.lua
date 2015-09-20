@@ -24,18 +24,23 @@ M.role = {
 	"爪牙(邪)", -- 10
 }
 
+M.camp_name = {
+    "正", "正", "正", "正",  "邪", "邪", "邪", "邪","邪", "邪"
+}
+
+-- 4: 表示只能看见派别，不能看见身份
 M.visible = {
---   梅林 派西维尔 兰(正)  正    刺客  莫德雷德 莫甘娜  兰(邪) 奥伯伦  邪
-   { false, false, false, false, true,  false,   true,   true,   true,  true },   --梅林
-   { true,  false, false, false, true,  false,   true,   false,  false, false },  --派西维尔
-   { false, false, false, false, false, false,   false,   3,     false, false },  --兰(正)
-   { false, false, false, false, false, false,   false,  false,  false, false },  --正
-   { false, false, false, false, false, true,    true,   true,   false, true },	  --刺客
-   { false, false, false, false, true,  false,   true,   true,   false, true },   --莫德雷德
-   { false, false, false, false, true,  true,    false,  true,   false, true },   --莫甘娜
-   { false, false, 3,     false, 3,     3,       3,      false,  false, 3 },      --兰(邪)
-   { false, false, false, false, false, false,   false,  false,  false, false },  --奥伯伦
-   { false, false, false, false, false, true,    true,   true,   false, true },	  --刺客
+--   梅林   派西维尔 兰(正)  骑士   刺客  莫德雷德  莫甘娜  兰(邪)  奥伯伦  爪牙
+   { false, false,     false,   false, true,  false,       true,   true,     true,  true },   --梅林
+   { 4,      false,     false,   false, true,  false,       4,       false,    false, false },  --派西维尔
+   { false, false,     false,   false, false, false,       false,   3,        false, false },  --兰(正)
+   { false, false,     false,   false, false, false,       false,  false,    false, false },  --正
+   { false, false,     false,   false, false, 4,            4,       true,     false, 4 },	  --刺客
+   { false, false,     false,   false, 4,      false,       4,       true,     false, 4 },   --莫德雷德
+   { false, false,     false,   false, 4,      4,            false,  true,     false, 4 },   --莫甘娜
+   { false, false,      3,       false, 3,      3,            3,       false,     false, 3 },      --兰(邪)
+   { false, false,     false,   false, false, false,       false,  false,    false, false },  --奥伯伦
+   { false, false,     false,   false, false, true,        true,   true,     false, true },	  --刺客
 }
 
 local camp_good = {

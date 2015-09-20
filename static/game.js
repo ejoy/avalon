@@ -96,7 +96,8 @@ AvalonGame.fn.render_role_info = function(){
            var friends = resp.information
            var friends_html = ""
            for(var i=0; i<friends.length; i++){
-              friends_html += '<span>' + friends[i].valueOf() + '</span>' 
+               var v = friends[i]
+              friends_html += '<span>' + v.username + " : " + v.identity  + '</span>' 
            } 
 
            Ejoy("role-visible").html(friends_html)
