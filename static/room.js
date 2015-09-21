@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
     function set_room_number(){
         var pathname = location.pathname.split('/')
-        room_number = pathname[pathname.length - 1]
+        room_number = parseInt(pathname[pathname.length - 1], 10)
         Ejoy('room_number').html(room_number) 
     }
 
@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", function(){
         Ejoy.postJSON('/room', req, function(resp){
             console.log('request', resp)
             if(game_status == "game"){return}
+            if (resp.error) {return}
 
             version = resp.version;
             if(resp.status){
@@ -35,8 +36,8 @@ document.addEventListener("DOMContentLoaded", function(){
 
                     game_status = "game"
                     prepare_clear()
-                    var avalon = new AvalonGame()
-                    return avalon.begin()
+                    var avalon = new AvalonGame(userid)
+                    return avalon.begin(resp)
                 }
             }
             if(resp.player){

@@ -61,7 +61,8 @@
 
           <div class="ground">
               <h4>###<span>提案阶段</span>###</h4> 
-              <div class="stage_desc"><span>任务x 第x个提案</span> <span class="plan-button"> [提案] </span></div>
+              <div class="stage_desc">任务x 第x个提案</div>
+              <div class="stage_prompt">请选出x人 </div>
                 
               <div class="game-people">
                 <div class="people_item" id="6577092"><span class="status_mark status_0" style="color:undefined">u374837</span></div> 
@@ -72,8 +73,13 @@
               </div>
 
               <div class="game_action">
-                  <button class="plan-cancel">取消</button>
-                  <button class="plan-commit">提议</button>
+                <div class="stage-action">
+                  <button class="stage-commit">提议</button>
+                </div>
+                <div class="audit-action" style="display:none">
+                  <button class="audit-yes"> 赞同 </button>
+                  <button class="audit-no"> 否决 </button>
+                </div>
               </div>
 
               <div class="game-history">

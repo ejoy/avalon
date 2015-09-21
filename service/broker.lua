@@ -58,11 +58,11 @@ action_method["/lobby"] = function(body, userid, username)
 end
 
 action_method["/room"] = function(body, userid, username)
-	local args = urllib.parse_query(body)
+	local args = body
 	if not args then
 		return '{"status":"error","error":"Invalid Action"}'
 	end
-	local roomid = tonumber(args.roomid)
+	local roomid = args.roomid
 	if not roomid then
 		return '{"status":"error","error":"Invalid Room id"}'
 	end
@@ -86,6 +86,10 @@ end
 local function handle_socket(id)
 	-- limit request body size to 8192 (you can pass nil to unlimit)
 	local code, url, method, header, body = httpd.read_request(sockethelper.readfunc(id), 8192)
+    print("!!", body)
+    if body and body ~= "" then
+        body = json.decode(body)
+    end
 	if code then
 		if code ~= 200 then
 			response(id, code)
@@ -131,7 +135,8 @@ skynet.start(function()
 	skynet.dispatch("lua", function(_,_,id, ipaddr)
 		address_table[id] = ipaddr
 		socket.start(id)
-		pcall(handle_socket, id)
+		local ok,reason = xpcall(handle_socket, debug.traceback, id)
+        if not ok then print(reason) end
 		socket.close(id)
 	end)
 end)

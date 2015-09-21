@@ -34,8 +34,8 @@ Ejoy.postJSON = function(url, req, callback){
            callback(data)
        }
     }
-    //xmlhttp.send(JSON.stringify(req));
-    xmlhttp.send(Ejoy.url_params(req));
+    xmlhttp.send(JSON.stringify(req));
+    //xmlhttp.send(Ejoy.url_params(req));
 
 }
 

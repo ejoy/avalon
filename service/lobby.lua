@@ -29,7 +29,7 @@ function action.create(userid, username, args)
 end
 
 function action.join(userid, username, args)
-	local roomid = tonumber(args.roomid)
+	local roomid = args.roomid
 	if roomid and skynet.call(roomkeeper, "lua", "query", roomid) then
         return {roomid = roomid}
 	else
@@ -45,7 +45,7 @@ skynet.start(function()
 			skynet.ret(skynet.pack(main(httpheader)))
 		elseif cmd == "api" then
 			-- lobby api
-			local args = urllib.parse_query(body)
+			local args = body
             local ret = {username = username}
 			if args then
 				local f = action[args.action]
