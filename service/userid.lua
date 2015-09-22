@@ -19,7 +19,7 @@ local function create_userid()
 	else
 		lastid = lastid + 1
 	end
-	return lastid, new_username(lastid)
+	return tostring(lastid), new_username(lastid)
 end
 
 local function get_username(userid)

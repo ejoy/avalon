@@ -112,7 +112,6 @@ document.addEventListener("DOMContentLoaded", function(){
         for(var i = 0; i < rules.length; i++){
             rules_dom[rules[i]].className += " rule_enabled"
         }
-        
     }
 
     function render_people_status(players){

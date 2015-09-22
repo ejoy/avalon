@@ -29,7 +29,7 @@ local function get_userid(header)
 	if cookie then
 		for k,v in cookie:gmatch " *(.-)=([^;]*);?" do
 			if k == "userid" then
-				userid = tonumber(v)
+				userid = v
 				break
 			end
 		end
@@ -86,7 +86,6 @@ end
 local function handle_socket(id)
 	-- limit request body size to 8192 (you can pass nil to unlimit)
 	local code, url, method, header, body = httpd.read_request(sockethelper.readfunc(id), 8192)
-    print("!!", body)
     if body and body ~= "" then
         body = json.decode(body)
     end

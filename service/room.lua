@@ -121,19 +121,28 @@ local function gameinfo(userid)
     local players = {}
     for _, uid in ipairs(R.info.uidlist) do
         local u = R.info.user_tbl[uid]
-        table.insert(players, {userid = u.userid, username=u.username, color = "#ffffff"})
+        local p = {userid = u.userid, username=u.username, color = "#ffffff"}
+        if R.info.mode == "end" then
+            p.identity = rule.role[u.identity]
+        end
+        table.insert(players, p)
     end
 
     local stagel = {}
-    for uid in pairs(R.info.stage) do
+    for _,uid in ipairs(R.info.stage) do
         table.insert(stagel, uid)
     end
+    local hist = {}
+    for i,s in ipairs(R.info.history) do hist[i] = s end
+
     return {
         players = players,
         identity = {name = identity_name, desc = ""},
         information = tmp_information,
+        evil_count = #R.info.uidlist - rule.camp_good[#R.info.uidlist],
         gameinfo = {round = R.info.round, pass = R.info.pass, leader = R.info.leader,
-                    stage = stagel, mode = R.info.mode},
+                    stage = stagel, mode = R.info.mode, history = hist,
+                    need = R.stage_per_round[R.info.round], round_success = R.info.round_success},
         status = "game",
         version = R.version,
     }
@@ -145,9 +154,118 @@ local function roominfo(userid)
     return R.cache
 end
 
+local function _seri(...)
+    local cache = {}
+    local function _seri(el, path)
+        if type(el) ~= "table" then
+            if type(el) == "string" then
+                return el
+            else
+                return tostring(el)
+            end
+        end
+
+        if cache[el] then return cache[el] end
+        cache[el] = path == "" and "." or path
+
+        local tmp = {}
+        for i,v in ipairs(el) do
+            table.insert(tmp, _seri(v, path.."."..i))
+        end
+        return string.format("[%s]", table.concat(tmp, ", "))
+    end
+
+    local output = {}
+    for i=1,select("#", ...) do
+        table.insert(output, _seri(select(i, ...), ""))
+    end
+    return table.concat(output, " ")
+end
+
+local handles = {
+    pass_limit = function () return rule.pass_limit end,
+    leader = function () return R.info.user_tbl[R.info.leader].username end,
+    stage = function ()
+        local l = {}
+        for _,uid in ipairs(R.info.stage) do
+            table.insert(l, R.info.user_tbl[uid].username)
+        end
+        return _seri(l)
+    end,
+
+    vote_yes = function ()
+        local l = {}
+        for uid,flag in pairs(R.vote) do
+            if flag then table.insert(l, R.info.user_tbl[uid].username) end
+        end
+        return _seri(l)
+    end,
+
+    vote_no = function ()
+        local l = {}
+        for uid,flag in pairs(R.vote) do
+            if not flag then table.insert(l, R.info.user_tbl[uid].username) end
+        end
+        return _seri(l)
+    end
+}
+
+local function add_history(...)
+    local l = {...}
+    for i,s in ipairs(l) do
+        l[i] = string.gsub(s, "{([%w_]+)}", function (w) return handles[w]() end)
+    end
+
+    local hist = ("%d.%d  "):format(R.info.round, R.info.pass) .. table.concat(l, "\n\t")
+    table.insert(R.info.history, hist)
+end
+
 function room.web(userid, username)
 	enter_room(userid, username)
 	return content
+end
+
+local function enter_quest()
+    R.info.mode = "quest"
+    R.vote = {}
+end
+
+local function new_pass()
+    R.info.mode = "plan"
+    R.info.stage = {}
+    R.vote = {}
+    R.info.pass = R.info.pass + 1
+
+    for i,uid in ipairs(R.info.uidlist) do
+        if uid == R.info.leader then
+            local j = i == #R.info.uidlist and 1 or i+1
+            R.info.leader = R.info.uidlist[j]
+            break
+        end
+    end
+end
+
+local function new_round(success)
+    if R.info.round == #R.stage_per_round then
+        R.info.mode = "end"
+        return
+    end
+
+    R.info.round = R.info.round + 1
+    R.info.pass = 0
+    if success then
+        R.info.round_success = R.info.round_success + 1
+    end
+    new_pass()
+end
+
+local function next_pass()
+    if R.info.pass > 5 then
+        add_history("提案连续{pass_limit}次没有通过, 此轮任务失败")
+        return new_round(false)
+    end
+
+    new_pass()
 end
 
 local api = {}
@@ -178,10 +296,13 @@ function api.begin_game(args)
         end
         table.sort(uidlist)
         R.status = "game"
+        R.stage_per_round = rule.stage_per_round[#uidlist]
+        R.vote = {}
         R.info = objproxy.new{
             user_tbl = user_tbl,
             round = 1,          -- 第n轮
             pass =1,            -- 第n次提案
+            round_success = 0,  -- 成功任务数
             rule = R.info.rules,
             leader = uidlist[math.random(#uidlist)],
             uidlist = uidlist,
@@ -194,32 +315,53 @@ function api.begin_game(args)
     return roominfo(userid)
 end
 
-function api.audit(args)
+function api.vote(args)
     local userid = args.userid
-    if R.info.mode ~= "audit" then
-        return {error = "您不能表态"}
+    local approve = args.approve
+
+    local function in_stage()
+        for _,uid in ipairs(R.info.stage) do
+            if uid == userid then return true end
+        end
+        return false
     end
 
-    R.audit = {}
-    R.audit[userid] = true
-
-    local total,yes = 0,0
-    for _,flag in pairs(R.audit) do
-        total = total + 1
-        if flag then yes = yes+1 end
+    local function _total()
+        local total,yes = 0,0
+        for _,flag in pairs(R.vote) do
+            total = total + 1
+            if flag then yes = yes+1 end
+        end
+        return total, yes
     end
 
-    if count == #R.info.uidlist then
-        if yes > total/2 then
-            R.info.mode = "quest"
-        else
-            R.info.mode = "stage"
-            R.info.pass = R.info.pass + 1
-            if R.info.pass > 100 then
-                -- 自动流产
+    if R.info.mode == "audit" then
+        R.vote[userid] = approve
+        local total, yes = _total()
+        if total == #R.info.uidlist then
+            if yes > total/2 then
+                add_history("{leader} 的提议 {stage} 通过", "赞同者: {vote_yes}")
+                enter_quest()
             else
+                add_history("{leader} 的提议 {stage} 未通过", "反对者: {vote_no}")
+                next_pass()
             end
         end
+    elseif R.info.mode == "quest" and in_stage() then
+        R.vote[userid] = approve
+        local total, yes = _total()
+        if total == #R.info.stage then
+            local needtwo = R.stage_per_round[R.info.round] < 0
+            if yes == total or needtwo and yes+1 == total then
+                add_history("任务成功, 参与者: {stage}", ("出现%d张失败票"):format(total-yes))
+                new_round(true)
+            else
+                add_history("任务失败, 参与者: {stage}", ("出现%d张失败票"):format(total-yes))
+                new_round(false)
+            end
+        end
+    else
+        return {error = "您不能表态"}
     end
 end
 

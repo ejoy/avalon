@@ -12,7 +12,7 @@ local function new_proxy(v, flag)
 end
 
 function proxy.__len(t)
-    return len(t._proxyobj)
+    return #t._proxyobj
 end
 
 function proxy.__index(t, k)

@@ -17,12 +17,13 @@ AvalonGame.fn.begin = function(resp){
     this.render_players(resp.players, resp.gameinfo.stage)
     this.game_bind_action()
     this.render_role_info(resp)
-    //this.set_game_content(0, true)
+    this.update_game(0)
 }
 
 AvalonGame.fn.update_info = function(resp){
     this.mode = resp.gameinfo.mode
     this.is_leader = resp.gameinfo.leader == userid
+    this.stage = resp.gameinfo.stage
 }
 
 AvalonGame.fn.set_game_history = function(v, poll_begin){
@@ -38,7 +39,7 @@ AvalonGame.fn.set_game_history = function(v, poll_begin){
     })
 }
 
-AvalonGame.fn.update_game = function (v, poll_begin) {
+AvalonGame.fn.update_game = function (v) {
     var self = this
     var req = {
         roomid: room_number,
@@ -47,50 +48,105 @@ AvalonGame.fn.update_game = function (v, poll_begin) {
         version: v ? v : 0
     }
     Ejoy.postJSON("/room", req, function(resp){
+        console.log(resp)
+        if (resp.error){
+            return
+        }
+
+        gameinfo = resp.gameinfo
         version = resp.version
         self.update_info(resp)
 
-        if (resp.gameinfo.mode == "audit") {
-            Ejoy("stage_prompt").html("请表决该提案")
-            Document.getElementsByClassName("audit-action").style.display = "block"
-            Document.getElementsByClassName("stage-action").style.display = "none"
-            self.render_players(resp.players, resp.gameinfo.stage)
+        Ejoy("stage_title").html("共" + resp.evil_count + "个反方")
+        Ejoy("stage_desc").html("第 "+ resp.gameinfo.round + " 个任务, 第 " + resp.gameinfo.pass + " 次提案" + " 已成功" + gameinfo.round_success + "个任务")
+
+        if (resp.gameinfo.history) {
+            var hist = ""
+            for (var i=0;i<resp.gameinfo.history.length;i++) {
+                hist += "<pre>" + resp.gameinfo.history[i] + "</pre>"
+            }
+            Ejoy("game-history").html(hist)
         }
 
-        if (poll_begin) {
-            self.update_game(version, true)
+        if (resp.gameinfo.mode == "plan") {
+            self.render_players(resp.players, resp.gameinfo.stage)
+            if (userid == resp.gameinfo.leader) {
+                var info = resp.gameinfo
+                Ejoy("stage_prompt").html("请选出 " + info.need + " 人")
+                document.getElementsByClassName('stage-action')[0].style.display = "block"
+                document.getElementsByClassName('vote-action')[0].style.display = "none"
+                return
+            } else {
+                var info = resp.gameinfo
+                Ejoy("stage_desc").html("第 "+ info.round + " 个任务, 第 " + info.pass + " 次提案")
+                document.getElementsByClassName('stage-action')[0].style.display = "none"
+                document.getElementsByClassName('vote-action')[0].style.display = "none"
+
+                var leader
+                for (var i=0;i<resp.players.length;i++) {
+                    if (resp.players[i].userid == info.leader) {
+                        leader = resp.players[i]
+                        break
+                    }
+                }
+                Ejoy("stage_prompt").html(leader.username + " 正在准备提案")
+
+                self.wait()
+            }
+        }
+
+        if (resp.gameinfo.mode == "audit") {
+            var leader
+            for (var i=0;i<resp.players.length;i++) {
+                if (resp.players[i].userid == resp.gameinfo.leader) {
+                    leader = resp.players[i]
+                    break
+                }
+            }
+
+            Ejoy("stage_prompt").html("请表决 " + leader.username + " 的提案")
+            document.getElementsByClassName("vote-action")[0].style.display = "block"
+            document.getElementsByClassName("stage-action")[0].style.display = "none"
+            self.render_players(resp.players, resp.gameinfo.stage)
+            return
+        }
+
+        if (resp.gameinfo.mode == "quest") {
+            document.getElementsByClassName("stage-action")[0].style.display = "none"
+            self.render_players(resp.players, resp.gameinfo.stage)
+
+            if (resp.gameinfo.stage.indexOf(userid) == -1) {
+                Ejoy("stage_prompt").html("请等待投票结果")
+                document.getElementsByClassName("vote-action")[0].style.display = "none"
+                self.wait()
+            } else {
+                Ejoy("stage_prompt").html("请投票决定任务成功或失败")
+                document.getElementsByClassName("vote-action")[0].style.display = "block"
+                return
+            }
+        }
+
+        if (resp.gameinfo.mode == "end") {
+            var prompt = "游戏结束! "
+            if (resp.gameinfo.round_success >= 3)
+                prompt += "正方胜利"
+            else
+                prompt += "反方胜利"
+            Ejoy("stage_prompt").html(prompt)
+
+            self.render_players(resp.players, resp.gameinfo.stage)            
         }
     })
 }
 
 AvalonGame.fn.wait = function () {
-    this.update_game(version, true)
+    this.update_game(version)
 }
 
 AvalonGame.fn.leader_plan = function(resp) {
-    var info = resp.gameinfo
-    Ejoy("stage_desc").html("第 "+ info.round + " 个任务, 第 " + info.pass + " 次提案")
-    Ejoy("stage_prompt").html("请选出 " + info.need + " 人")
-    document.getElementsByClassName('stage-action')[0].style.display = "block"
-    document.getElementsByClassName('audit-action')[0].style.display = "none"
 }
 
 AvalonGame.fn.wait_leader_plan = function (resp) {
-    var info = resp.gameinfo
-    Ejoy("stage_desc").html("第 "+ info.round + " 个任务, 第 " + info.pass + " 次提案")
-    document.getElementsByClassName('stage-action')[0].style.display = "none"
-    document.getElementsByClassName('audit-action')[0].style.display = "none"
-
-    var leader
-    for (var i=0;i<resp.players.length;i++) {
-        if (resp.players[i].userid == info.leader) {
-            leader = resp.players[i]
-            break
-        }
-    }
-    Ejoy("stage_prompt").html(leader.username + " 正在准备提案")
-
-    this.wait()
 }
 
 AvalonGame.fn.game_bind_action = function(){
@@ -112,10 +168,15 @@ AvalonGame.fn.game_bind_action = function(){
     Ejoy("game-people").on("click", "people_item", function(select_dom){
         var user_id = select_dom.id;
         if (self.mode == "plan" && self.is_leader) {
-            if (stage_list.indexOf(user_id) == -1) 
-                stage_list.push(user_id)
-             else
+            if (stage_list.indexOf(user_id) == -1) {
+                if (stage_list.length >= Math.abs(gameinfo.need)) {
+                    return
+                }
+                stage_list.push(user_id);
+            }
+            else {
                 Ejoy.array_remove(stage_list, user_id)
+            }
 
             var status_mark = "status_0"
             if (stage_list.indexOf(user_id) == -1)
@@ -127,7 +188,7 @@ AvalonGame.fn.game_bind_action = function(){
     );
 
     Ejoy('stage-commit').on('click', function(){
-        if (self.mode == "plan" && self.is_leader) {
+        if (self.mode == "plan" && self.is_leader && stage_list.length == Math.abs(gameinfo.need)) {
             var req = {
                 roomid: room_number,
                 status: 'game',
@@ -145,13 +206,13 @@ AvalonGame.fn.game_bind_action = function(){
         }
     });
 
-    var genaudit = function (flag){
+    var genvote = function (flag){
         return function ()  {
-            if (self.mode == "audit") {
+            if (self.mode == "audit" || (self.mode == "quest" && self.stage.indexOf(userid) != -1)) {
                 var req = {
                     roomid: room_number,
                     status: 'game',
-                    action: 'audit',
+                    action: 'vote',
                     version: version,
                     approve: flag,
                 }
@@ -159,15 +220,15 @@ AvalonGame.fn.game_bind_action = function(){
                 Ejoy.postJSON('/room', req, function(resp){
                     console.log(resp)
                     if(!resp.error){
-                        Document.getElementsByClassName("audit-action").style.display = "none"
+                        document.getElementsByClassName("vote-action")[0].style.display = "none"
                         self.wait()
                     }
                 })
             }
         }
     }
-    Ejoy('audit-yes').on('click', genaudit(true));
-    Ejoy('audit-no').on('click', genaudit(false));
+    Ejoy('vote-yes').on('click', genvote(true));
+    Ejoy('vote-no').on('click', genvote(false));
 }
 
 AvalonGame.fn.render_role_info = function(resp){
@@ -184,12 +245,6 @@ AvalonGame.fn.render_role_info = function(resp){
         } 
 
         Ejoy("role-visible").html(friends_html)
-
-        if (userid == resp.gameinfo.leader) {
-            self.leader_plan(resp)
-        } else {
-            self.wait_leader_plan(resp)
-        }
     }
 }
 
@@ -198,20 +253,20 @@ AvalonGame.fn.render_players = function(players, stage){
     for(var i=0; i < players.length; i++){
         var player = players[i]
         var mark = 1
-        if (stage.indexOf(player.userid) != -1)
+        if (stage.indexOf(player.userid) > -1)
             mark = 0
-        var player_str = '<div class="people_item" id="' + 
+        var content = player.username
+        if (player.identity)
+            content += "[" + player.identity + "]"
+        players_str += '<div class="people_item" id="' + 
             player.userid + 
             '"><span class="status_mark status_' + 
             mark +
             '" style="color:' +
             player.color +
             '">' +
-            player.username +
+            content +
             '</span></div>';
-        players_str += player_str;
     } 
     Ejoy('game-people').html(players_str);
-
 }
-

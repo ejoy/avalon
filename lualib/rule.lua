@@ -45,12 +45,12 @@ M.visible = {
 
 local camp_good = {
 	0,0,0,0,	-- can't below 4
-	2,	-- 5
-	2,	-- 6
-	3,	-- 7
-	3,	-- 8
-	4,	-- 9
-	4,	-- 10
+	3,	-- 5
+	4,	-- 6
+	4,	-- 7
+	5,	-- 8
+	6,	-- 9
+	6,	-- 10
 }
 
 local function randomrole(roles)
@@ -132,4 +132,16 @@ function M.checkrules(rules, n)
 	return true, randomrole(ret)
 end
 
+M.pass_limit = 4
+
+M.stage_per_round = {
+    [5] = {2,3,2,3,3},
+    [6] = {2,3,4,3,4},
+    [7] = {2,3,3,-4,4},
+    [8] = {3,4,4,-5,5},
+    [9] = {3,4,4,-5,5},
+    [10] = {3,4,4,-5,5},
+}
+
+M.camp_good = camp_good
 return M
