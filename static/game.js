@@ -58,7 +58,7 @@ AvalonGame.fn.update_game = function (v) {
         self.update_info(resp)
 
         Ejoy("stage_title").html("共" + resp.evil_count + "个反方")
-        Ejoy("stage_desc").html("第 "+ resp.gameinfo.round + " 个任务, 第 " + resp.gameinfo.pass + " 次提案" + " 已成功" + gameinfo.round_success + "个任务")
+        Ejoy("stage_desc").html("第 "+ resp.gameinfo.round + " 个任务, 第 " + resp.gameinfo.pass + " 次提案" )
 
         if (resp.gameinfo.history) {
             var hist = ""
@@ -72,13 +72,16 @@ AvalonGame.fn.update_game = function (v) {
             self.render_players(resp.players, resp.gameinfo.stage)
             if (userid == resp.gameinfo.leader) {
                 var info = resp.gameinfo
-                Ejoy("stage_prompt").html("请选出 " + info.need + " 人")
+                var prompt = "请选出 " + Math.abs(info.need) + " 人";
+                if (info.need < 0) {
+                    prompt += "(本次任务失败需至少两次反对票)"
+                }
+                Ejoy("stage_prompt").html(prompt)
                 document.getElementsByClassName('stage-action')[0].style.display = "block"
                 document.getElementsByClassName('vote-action')[0].style.display = "none"
                 return
             } else {
                 var info = resp.gameinfo
-                Ejoy("stage_desc").html("第 "+ info.round + " 个任务, 第 " + info.pass + " 次提案")
                 document.getElementsByClassName('stage-action')[0].style.display = "none"
                 document.getElementsByClassName('vote-action')[0].style.display = "none"
 
@@ -89,7 +92,11 @@ AvalonGame.fn.update_game = function (v) {
                         break
                     }
                 }
-                Ejoy("stage_prompt").html(leader.username + " 正在准备提案")
+                var prompt = leader.username + " 正在准备" + Math.abs(gameinfo.need) "人提案."
+                if (info.need < 0) {
+                    prompt += "(本次任务失败需至少两次反对票)"
+                }
+                Ejoy("stage_prompt").html(prompt)
 
                 self.wait()
             }

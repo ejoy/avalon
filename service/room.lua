@@ -19,7 +19,6 @@ local R = {
 local READY = 0
 local NOTREADY = 1
 local BLOCK = 2
-local PUSH_TIME = 100 * 60
 
 local roomkeeper
 local alive
@@ -261,7 +260,7 @@ end
 
 local function next_pass()
     if R.info.pass > 5 then
-        add_history("提案连续{pass_limit}次没有通过, 此轮任务失败")
+        add_history("任务失败! 提案连续{pass_limit}次没有通过")
         return new_round(false)
     end
 
@@ -340,10 +339,10 @@ function api.vote(args)
         local total, yes = _total()
         if total == #R.info.uidlist then
             if yes > total/2 then
-                add_history("{leader} 的提议 {stage} 通过", "赞同者: {vote_yes}")
+                add_history("提议通过. {leader} 提议 {stage}", "赞同者: {vote_yes}", "反对者: {vote_no}")
                 enter_quest()
             else
-                add_history("{leader} 的提议 {stage} 未通过", "反对者: {vote_no}")
+                add_history("提议否决! {leader} 提议 {stage}", "赞同者: {vote_yes}", "反对者: {vote_no}")
                 next_pass()
             end
         end
@@ -353,10 +352,10 @@ function api.vote(args)
         if total == #R.info.stage then
             local needtwo = R.stage_per_round[R.info.round] < 0
             if yes == total or needtwo and yes+1 == total then
-                add_history("任务成功, 参与者: {stage}", ("出现%d张失败票"):format(total-yes))
+                add_history("任务成功.  参与者: {stage}", ("出现%d张失败票"):format(total-yes))
                 new_round(true)
             else
-                add_history("任务失败, 参与者: {stage}", ("出现%d张失败票"):format(total-yes))
+                add_history("任务失败! 参与者: {stage}", ("出现%d张失败票"):format(total-yes))
                 new_round(false)
             end
         end
@@ -409,7 +408,7 @@ function api.request(args)
 	if version ~= 0 and version == R.version then
 		local co = coroutine.running()
 		R.push_tbl[userid] = co
-		skynet.sleep(PUSH_TIME)
+		skynet.wait()
 		R.push_tbl[userid] = nil
 		if version == R.version then
 			return {version = version}

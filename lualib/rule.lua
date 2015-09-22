@@ -11,6 +11,8 @@
 
 local M = {}
 
+math.randomseed(os.time())
+
 M.role = {
 	"梅林(正)",	-- 1
 	"派西维尔(正)",	-- 2
