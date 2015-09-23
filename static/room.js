@@ -110,7 +110,7 @@ document.addEventListener("DOMContentLoaded", function(){
         var rules_str = ""
         rules_dom = document.getElementsByClassName("room_rule")[0].children
         for(var i = 0; i < rules.length; i++){
-            rules_dom[rules[i]].className += " rule_enabled"
+            rules_dom[rules[i]-1].className += " rule_enabled"
         }
     }
 

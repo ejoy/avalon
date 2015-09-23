@@ -62,7 +62,7 @@ AvalonGame.fn.update_game = function (v) {
 
         if (resp.gameinfo.history) {
             var hist = ""
-            for (var i=0;i<resp.gameinfo.history.length;i++) {
+            for (var i=resp.gameinfo.history.length-1;i>=0;i--) {
                 hist += "<pre>" + resp.gameinfo.history[i] + "</pre>"
             }
             Ejoy("game-history").html(hist)
@@ -92,7 +92,7 @@ AvalonGame.fn.update_game = function (v) {
                         break
                     }
                 }
-                var prompt = leader.username + " 正在准备" + Math.abs(gameinfo.need) "人提案."
+                var prompt = leader.username + " 正在准备" + Math.abs(gameinfo.need) + "人提案."
                 if (info.need < 0) {
                     prompt += "(本次任务失败需至少两次反对票)"
                 }

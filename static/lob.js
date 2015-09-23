@@ -34,20 +34,7 @@ document.addEventListener("DOMContentLoaded", function(){
     
     }
     function join_room(roomid){
-        var req = {
-            action: "join",
-            roomid: roomid
-        }
-        Ejoy.postJSON('/lobby', req, function(resp){
-            //resp {status: 'join', room: 787878}
-            //{"status":"error","error":"Invalid room id"}
-            if(!resp.room){
-                alert("房间不存在!")
-            }else{
-                location.href = "/" + resp.room
-            }
-        })
-
+        location.href = "/" + roomid
     }
     get_name()
 });
