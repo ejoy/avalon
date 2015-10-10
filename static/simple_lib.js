@@ -22,6 +22,7 @@ Ejoy.url_params = function(dict){
 Ejoy.postJSON = function(url, req, callback){
     var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
     xmlhttp.open("POST", url);
+    xmlhttp.timeout = 1000 * 120;
     //xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xmlhttp.onreadystatechange = function() {
        if (xmlhttp.readyState == 4) {

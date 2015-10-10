@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", function(){
                     game_status = "game"
                     prepare_clear()
                     var avalon = new AvalonGame(userid)
+                    version = 0
                     return avalon.begin(resp)
                 }
             }

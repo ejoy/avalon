@@ -53,6 +53,11 @@ AvalonGame.fn.update_game = function (v) {
             return
         }
 
+        if (version != 0 && version == resp.version) {
+            console.log(">>> continue update_game")
+            return self.update_game(version)
+        }
+        
         gameinfo = resp.gameinfo
         version = resp.version
         self.update_info(resp)

@@ -9,6 +9,7 @@ local objproxy = require"objproxy"
 local content = staticfile["room.html"]
 
 local ALIVETIME = 100 * 60 * 10 -- 10 minutes
+local PUSH_TIME = 100 * 60
 
 local R = {
     version = 1,
@@ -259,7 +260,7 @@ local function new_round(success)
 end
 
 local function next_pass()
-    if R.info.pass > 5 then
+    if R.info.pass >= rule.pass_limit then
         add_history("任务失败! 提案连续{pass_limit}次没有通过")
         return new_round(false)
     end
@@ -408,7 +409,7 @@ function api.request(args)
 	if version ~= 0 and version == R.version then
 		local co = coroutine.running()
 		R.push_tbl[userid] = co
-		skynet.wait()
+        skynet.sleep(PUSH_TIME)
 		R.push_tbl[userid] = nil
 		if version == R.version then
 			return {version = version}

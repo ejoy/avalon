@@ -134,7 +134,7 @@ function M.checkrules(rules, n)
 	return true, randomrole(ret)
 end
 
-M.pass_limit = 4
+M.pass_limit = 5
 
 M.stage_per_round = {
     [5] = {2,3,2,3,3},
