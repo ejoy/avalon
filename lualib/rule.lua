@@ -32,7 +32,7 @@ M.camp_name = {
 
 -- 4: 表示只能看见派别，不能看见身份
 M.visible = {
---   梅林   派西维尔 兰(正)  骑士   刺客  莫德雷德  莫甘娜  兰(邪)  奥伯伦  爪牙
+--   梅林   派西维尔     兰(正)  骑士   刺客  莫德雷德       莫甘娜  兰(邪)    奥伯伦  爪牙
    { false, false,     false,   false, true,  false,       true,   true,     true,  true },   --梅林
    { 4,      false,     false,   false, true,  false,       4,       false,    false, false },  --派西维尔
    { false, false,     false,   false, false, false,       false,   3,        false, false },  --兰(正)
@@ -93,7 +93,7 @@ function M.checkrules(rules, n)
 	if lancelot > 1 then
 		return false,"请从兰斯洛特规则里选择其中一个，或则不选"
 	end
-	local ret = {1,3,5,8}
+	local ret = {1,5}
 
 	local good = 1	-- 梅林
 	local evil = 1	-- 刺客
@@ -131,6 +131,7 @@ function M.checkrules(rules, n)
 	for i = 1,n-camp_good[n] -  evil do
 		table.insert(ret, 10)
 	end
+
 	return true, randomrole(ret)
 end
 

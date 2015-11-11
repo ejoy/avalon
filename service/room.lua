@@ -303,7 +303,7 @@ function api.begin_game(args)
             round = 1,          -- 第n轮
             pass =1,            -- 第n次提案
             round_success = 0,  -- 成功任务数
-            rule = R.info.rules,
+            rules = R.info.rules,
             leader = uidlist[math.random(#uidlist)],
             uidlist = uidlist,
             stage = {},         -- 被提名的人
@@ -312,6 +312,9 @@ function api.begin_game(args)
         }
     end
 
+    for k,v in pairs(R.info.rules) do
+        print(":::",k,v)
+    end
     return roominfo(userid)
 end
 
@@ -435,7 +438,7 @@ function api.list(args)
                 identity_name = rule.role[u.identity]
             elseif visible == 4 then
                 identity_name = rule.camp_name[u.identity]
-            elseif visible == 3 and R.info.rules[8] then
+            elseif visible == 3 and not R.info.rules[6] and not R.info.rules[7] then
                 identity_name = rule.role[u.identity]
             end
             if identity_name then

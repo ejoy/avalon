@@ -142,7 +142,7 @@ input.room_number{
 
 .outter {
     overflow: scroll;
-    height: 480px;
+    height: 550px;
 }
 
 .prepare, .game{
